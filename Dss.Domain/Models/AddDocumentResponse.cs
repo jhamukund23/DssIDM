@@ -9,7 +9,7 @@ namespace Dss.Domain.Models
     public class AddDocumentResponse
     {
         public Guid CorrelationId { get; set; }
-        public Uri SasUrl { get; set; }
+        public Uri? SasUrl { get; set; }
 
     }
 }

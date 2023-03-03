@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Threading.Tasks;
 using Confluent.Kafka;
+using Kafka;
 using Kafka.Interfaces;
 
 namespace Kafka.Producer
@@ -10,7 +11,7 @@ namespace Kafka.Producer
     /// </summary>
     /// <typeparam name="TKey">Indicates message's key in Kafka topic</typeparam>
     /// <typeparam name="TValue">Indicates message's value in Kafka topic</typeparam>
-    public class KafkaProducer<TKey, TValue> : IDisposable, IKafkaProducer<TKey,TValue> where TValue : class
+    public class KafkaProducer<TKey, TValue> : IDisposable, IKafkaProducer<TKey, TValue> where TValue : class
     {
         private readonly IProducer<TKey, TValue> _producer;
 

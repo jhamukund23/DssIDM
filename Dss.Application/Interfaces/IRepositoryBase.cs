@@ -1,6 +1,6 @@
 using System.Linq.Expressions;
 
-namespace Dss.Application.Common.Interfaces;
+namespace Dss.Application.Interfaces;
 
 public interface IRepositoryBase<T>
 {

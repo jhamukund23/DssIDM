@@ -1,8 +1,9 @@
+using Dss.Application.Interfaces;
 using Dss.Infrastructure.Persistence;
 using Microsoft.EntityFrameworkCore;
 using System.Linq.Expressions;
 
-namespace Dss.Application.Common.Interfaces;
+namespace Dss.Application.Services;
 public abstract class RepositoryBase<T> : IRepositoryBase<T> where T : class
 {
     private readonly ApplicationDBContext _context;

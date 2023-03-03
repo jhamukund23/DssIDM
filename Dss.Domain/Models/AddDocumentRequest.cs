@@ -6,12 +6,11 @@ using System.Threading.Tasks;
 
 namespace Dss.Domain.Models
 {
-    public class AddDocument
+    public class AddDocumentRequest
     {
         public Guid CorrelationId { get; set; }
-        public Guid? DocId { get; set; }
-        public Uri TempBlobURL { get; set; }
-        public string? PermanentURL { get; set; }
         public string? FileName { get; set; }
+        public string? FileSise { get; set; }
+
     }
 }

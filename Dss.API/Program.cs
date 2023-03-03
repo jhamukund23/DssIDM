@@ -1,21 +1,14 @@
 using Confluent.Kafka;
-using MediatR;
 using Dss.application.Interfaces;
 using Dss.Application.Interfaces;
 using Dss.Application.Services;
 using Dss.Infrastructure.Persistence;
-using Kafka.Consumer;
 using Kafka.Interfaces;
 using Kafka.Producer;
 using Microsoft.AspNetCore.Http.Features;
 using Microsoft.AspNetCore.Server.Kestrel.Core;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.DependencyInjection;
 using Serilog;
-using System.Reflection;
-using Microsoft.AspNetCore.Hosting;
-using Dss.Application.Extensions;
-using Dss.Domain.Models;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -24,18 +17,7 @@ var connectionString = builder.Configuration.GetConnectionString("DefaultConnect
 builder.Services.AddDbContext<ApplicationDBContext>(options =>
     options.UseNpgsql(connectionString));
 
-// Register MediatR services
-builder.Services.AddMediatR(cfg =>
-{
-    cfg.RegisterServicesFromAssembly(typeof(Program).Assembly);
-});
-builder.Services.AddTransient<IMediator, Mediator>();
-builder.Services.AddMediatorHandlers(typeof(Program).GetTypeInfo().Assembly);
-builder.Services.AddMediatorHandlers();
-
-
 // Add services to the container.
-builder.Services.AddScoped<IPatientService, PatientService>();
 builder.Services.AddTransient<IAzureStorage, AzureStorage>();
 
 
