@@ -6,7 +6,7 @@
     public static class KafkaTopics
     {
         public static string BlobUploadCompletedEvent => "BlobUploadCompletedEvent";
-        public static string AddDocument => "AddDocument";
+        public static string AddDocumentRequest => "AddDocumentRequest";
         public static string AddDocumentResponse => "AddDocumentResponse";
     }
 }

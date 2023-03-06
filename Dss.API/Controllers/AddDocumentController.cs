@@ -78,7 +78,7 @@ namespace Dss.API.Controllers
         [HttpPost]
         [Route("GetBlobCompletedEvent")]
         [ProducesResponseType(StatusCodes.Status200OK)]
-        public async Task<IActionResult> GetBlobCompletedEventHandler(AddDocumentRequest addDocument)
+        public async Task<IActionResult> GetBlobCompletedEvent(AddDocumentRequest addDocument)
         {
             try
             {
