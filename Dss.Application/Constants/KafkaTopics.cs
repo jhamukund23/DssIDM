@@ -8,5 +8,6 @@
         public static string BlobUploadCompletedEvent => "BlobUploadCompletedEvent";
         public static string AddDocumentRequest => "AddDocumentRequest";
         public static string AddDocumentResponse => "AddDocumentResponse";
+        public static string AddDocumentErrorResponse => "AddDocumentErrorResponse";
     }
 }

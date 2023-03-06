@@ -1,13 +1,12 @@
 -- Creation of AddDocument table
-CREATE TABLE AddDocument (
-  CorrelationId uuid PRIMARY KEY,
-  DocId uuid,
-  TempBlobURL TEXT NOT NULL,
-  PermanentURL TEXT,
-  FileName varchar(500),
-  PRIMARY KEY (CorrelationId)
+CREATE TABLE adddocument (
+  correlationid uuid,
+  docid uuid,
+  tempbloburl TEXT NOT NULL,
+  permanenturl TEXT,
+  filename varchar(500),
+  CONSTRAINT adddocument_pkey PRIMARY KEY (correlationid )
 );
-
 
 
 -- INSERT INTO AddDocument (CorrelationId, DocId, TempBlobURL,PermanentURL,FileName) VALUES 

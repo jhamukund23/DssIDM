@@ -19,6 +19,7 @@ builder.Services.AddDbContext<ApplicationDBContext>(options =>
 
 // Add services to the container.
 builder.Services.AddTransient<IAzureStorage, AzureStorage>();
+builder.Services.AddTransient<IAddDocumentService, AddDocumentService>();
 
 
 // Configure the producer

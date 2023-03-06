@@ -18,7 +18,7 @@ namespace Dss.Application.Services
         {
             Create(model);
             await SaveAsync();
-            return model.CorrelationId.ToString();
+            return model.correlationid.ToString();
         }
         public async Task<bool> UpdateAddDocumentAsync(AddDocument model)
         {
@@ -36,12 +36,12 @@ namespace Dss.Application.Services
         public async Task<IList<AddDocument>> GetAddDocumentAsync()
         {
             var res = await FindAllAsync();
-            return res.OrderBy(x => x.CorrelationId).ToList();
+            return res.OrderBy(x => x.correlationid).ToList();
         }
 
         public async Task<AddDocument?> GetAddDocumentAsync(Guid id)
         {
-            var res = await FindByConditionAync(o => o.CorrelationId.Equals(id));
+            var res = await FindByConditionAync(o => o.correlationid.Equals(id));
             return res.FirstOrDefault();
         }
 

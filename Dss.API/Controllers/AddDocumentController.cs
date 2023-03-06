@@ -5,6 +5,7 @@ using Dss.Application.Constants;
 using Dss.Application.Interfaces;
 using Dss.Application.Services;
 using Dss.Domain.Models;
+using Dss.Domain.Models.Azure;
 using Kafka.Interfaces;
 using MediatR;
 using Microsoft.AspNetCore.Mvc;
@@ -52,10 +53,10 @@ namespace Dss.API.Controllers
                 await _kafkaProducer.ProduceAsync(topicPart, null, addDocumentResponse);
 
                 AddDocument addDocument = new()
-                {                   
-                    CorrelationId = addDocumentRequest.CorrelationId,
-                    FileName= addDocumentRequest.FileName,
-                    TempBlobURL = sasUrl,
+                {
+                    correlationid = addDocumentRequest.CorrelationId,
+                    filename= addDocumentRequest.FileName,
+                    tempbloburl = sasUrl,
                 };
                 await _addDocumentService.AddDocumentAsync(addDocument);
 
@@ -69,20 +70,24 @@ namespace Dss.API.Controllers
                     CorrelationId = addDocumentRequest.CorrelationId,
                     Error = ex.Message
                 };
-                var topicPart = new TopicPartition(KafkaTopics.AddDocumentResponse, new Partition(1));
+                var topicPart = new TopicPartition(KafkaTopics.AddDocumentErrorResponse, new Partition(1));
                 await _kafkaErrorProducer.ProduceAsync(topicPart, null, addDocumentErrorResponse);
                 return StatusCode(StatusCodes.Status400BadRequest);
             }
         }
 
         [HttpPost]
-        [Route("GetBlobCompletedEvent")]
+        [Route("BlobCompletedEvent")]
         [ProducesResponseType(StatusCodes.Status200OK)]
-        public async Task<IActionResult> GetBlobCompletedEvent(AddDocumentRequest addDocument)
+        public async Task<IActionResult> BlobCompletedEvent(BlobStorageEventHubData blobStorageEventHubData)
         {
             try
             {
-                
+                if (blobStorageEventHubData.eventType == "Microsoft.Storage.BlobCreated")
+                {
+                    
+
+                }
 
                 _logger.LogInformation("sas url details " + "");
                 return Ok(new { StatusCode = StatusCodes.Status201Created });
