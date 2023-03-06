@@ -1,3 +1,4 @@
+using Azure.Storage.Blobs;
 using Confluent.Kafka;
 using Dss.application.Interfaces;
 using Dss.Application.Interfaces;
@@ -8,6 +9,7 @@ using Kafka.Producer;
 using Microsoft.AspNetCore.Http.Features;
 using Microsoft.AspNetCore.Server.Kestrel.Core;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.DependencyInjection;
 using Serilog;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -16,6 +18,9 @@ var builder = WebApplication.CreateBuilder(args);
 var connectionString = builder.Configuration.GetConnectionString("DefaultConnection");
 builder.Services.AddDbContext<ApplicationDBContext>(options =>
     options.UseNpgsql(connectionString));
+
+// Register Azure Blob Container Client
+builder.Services.AddSingleton(x => new BlobContainerClient(builder.Configuration["BlobConnectionString"], builder.Configuration["BlobContainerName"]));
 
 // Add services to the container.
 builder.Services.AddTransient<IAzureStorage, AzureStorage>();
@@ -66,10 +71,7 @@ builder.Services.Configure<IISServerOptions>(options =>
 builder.Services.Configure<KestrelServerOptions>(options =>
 {
     options.Limits.KeepAliveTimeout = TimeSpan.FromMinutes(120);
-    options.Limits.RequestHeadersTimeout = TimeSpan.FromMinutes(120);
-    //options.Limits.MaxRequestBodySize = 500_000_000;
-    //options.Limits.MaxRequestBufferSize = null;
-    //options.Limits.MaxResponseBufferSize = null;
+    options.Limits.RequestHeadersTimeout = TimeSpan.FromMinutes(120);   
 });
 
 builder.Services.AddControllers();

@@ -36,27 +36,34 @@ namespace Dss.API.Controllers
             _logger = logger;
         }
 
+        #region Public Action Method
+        // Generate and return the SAS URI.
         [HttpPost]
         [Route("GetAddDocumentBlobUrl")]
-        [ProducesResponseType(StatusCodes.Status200OK)]
         public async Task<IActionResult> GetAddDocumentBlobUrl(AddDocumentRequest addDocumentRequest)
         {
             try
             {
+                // Get the SAS URI.
                 Uri sasUrl = await _storage.GetServiceSasUriForContainer();
-                SendResponseToTopic(addDocumentRequest.CorrelationId, sasUrl);
-                InsertAddDocumentIntoDB(addDocumentRequest, sasUrl);
 
-                //_logger.LogInformation("sas url details " + addDocumentResponse);
-                return Ok(new { StatusCode = StatusCodes.Status201Created });
+                // Send correlation id and sasUrl to Kafka topic.
+                ProduceAddDocumentResponse(addDocumentRequest.CorrelationId, sasUrl);
+                
+                // Insert add document details into database.
+                InsertAddDocumentRecordIntoDB(addDocumentRequest, sasUrl);
+
+                //Return status code
+                return Ok(new { StatusCode = StatusCodes.Status201Created});
             }
             catch (Exception ex)
             {
-                SendErrorResponseToTopic(addDocumentRequest.CorrelationId, ex.Message);
-                return StatusCode(StatusCodes.Status400BadRequest);
+                // Send correlation id and error message to Kafka topic.
+                ProduceAddDocumentErrorResponse(addDocumentRequest.CorrelationId, ex.Message);
+                _logger.LogError($"Exception occurred with a message: {ex.Message}");
+                return StatusCode(StatusCodes.Status400BadRequest, ex.Message);
             }
         }
-
 
 
         [HttpPost]
@@ -82,8 +89,10 @@ namespace Dss.API.Controllers
             }
         }
 
-        #region
-        private void InsertAddDocumentIntoDB(AddDocumentRequest addDocumentRequest, Uri sasUrl)
+        #endregion
+
+        #region Private Method
+        private void InsertAddDocumentRecordIntoDB(AddDocumentRequest addDocumentRequest, Uri sasUrl)
         {
             AddDocument addDocument = new()
             {
@@ -93,7 +102,7 @@ namespace Dss.API.Controllers
             };
             _addDocumentService.AddDocumentAsync(addDocument);
         }
-        private void SendResponseToTopic(Guid correlationId, Uri sasUrl)
+        private void ProduceAddDocumentResponse(Guid correlationId, Uri sasUrl)
         {
             AddDocumentResponse addDocumentResponse = new()
             {
@@ -103,7 +112,7 @@ namespace Dss.API.Controllers
             var topicPart = new TopicPartition(KafkaTopics.AddDocumentResponse, new Partition(1));
             _kafkaProducer.ProduceAsync(topicPart, null, addDocumentResponse);
         }
-        private void SendErrorResponseToTopic(Guid correlationId, string ex)
+        private void ProduceAddDocumentErrorResponse(Guid correlationId, string ex)
         {
             AddDocumentErrorResponse addDocumentErrorResponse = new()
             {

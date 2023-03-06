@@ -15,29 +15,24 @@ namespace Dss.Application.Services;
 public class AzureStorage : IAzureStorage
 {
     #region Dependency Injection / Constructor
-    private readonly string _storageConnectionString;
-    private readonly string _storageContainerName;
+    private readonly BlobContainerClient _blobContainerClient;    
     private readonly ILogger<AzureStorage> _logger;
-    public AzureStorage(IConfiguration configuration, ILogger<AzureStorage> logger)
+    public AzureStorage(BlobContainerClient blobContainerClient, ILogger<AzureStorage> logger)
     {
-        _storageConnectionString = configuration["BlobConnectionString"];
-        _storageContainerName = configuration["BlobContainerName"];
+        _blobContainerClient = blobContainerClient;      
         _logger = logger;
     }
 
     #endregion
     public async Task<List<BlobDto>> ListAsync()
-    {
-        // Get a reference to a container named in appsettings.json
-        BlobContainerClient container = new BlobContainerClient(_storageConnectionString, _storageContainerName);
-
+    {               
         // Create a new list object for 
         List<BlobDto> files = new List<BlobDto>();
 
-        await foreach (BlobItem file in container.GetBlobsAsync())
+        await foreach (BlobItem file in _blobContainerClient.GetBlobsAsync())
         {
             // Add each file retrieved from the storage container to the files list by creating a BlobDto object
-            string uri = container.Uri.ToString();
+            string uri = _blobContainerClient.Uri.ToString();
             var name = file.Name;
             var fullUri = $"{uri}/{name}";
 
@@ -56,15 +51,12 @@ public class AzureStorage : IAzureStorage
     public async Task<BlobResponseDto> UploadAsync(IFormFile blob)
     {
         // Create new upload response object that we can return to the requesting method
-        BlobResponseDto response = new();
-
-        // Get a reference to a container named in appsettings.json and then create it
-        BlobContainerClient container = new BlobContainerClient(_storageConnectionString, _storageContainerName);
-        await container.CreateIfNotExistsAsync();
+        BlobResponseDto response = new();       
+        await _blobContainerClient.CreateIfNotExistsAsync();
         try
         {
             // Get a reference to the blob just uploaded from the API in a container from configuration settings
-            BlobClient client = container.GetBlobClient(blob.FileName);
+            BlobClient client = _blobContainerClient.GetBlobClient(blob.FileName);
 
             // Set or update blob index tags on existing blob
             var Tags = new Dictionary<string, string> {
@@ -108,7 +100,7 @@ public class AzureStorage : IAzureStorage
         catch (RequestFailedException ex)
            when (ex.ErrorCode == BlobErrorCode.BlobAlreadyExists)
         {
-            _logger.LogError($"File with name {blob.FileName} already exists in container. Set another name to store the file in the container: '{_storageContainerName}.'");
+            _logger.LogError($"File with name {blob.FileName} already exists in container. Set another name to store the file in the container: '{_blobContainerClient.Name}.'");
             response.Status = $"File with name {blob.FileName} already exists. Please use another name to store your file.";
             response.Error = true;
             return response;
@@ -126,7 +118,6 @@ public class AzureStorage : IAzureStorage
         // Return the BlobUploadResponse object
         return response;
     }
-
     public async Task<BlobResponseDto> UploadWithSASUrlAsync(IFormFile blob, string sasUrl)
     {
         // Create new upload response object that we can return to the requesting method
@@ -184,7 +175,7 @@ public class AzureStorage : IAzureStorage
         catch (RequestFailedException ex)
            when (ex.ErrorCode == BlobErrorCode.BlobAlreadyExists)
         {
-            _logger.LogError($"File with name {blob.FileName} already exists in container. Set another name to store the file in the container: '{_storageContainerName}.'");
+            _logger.LogError($"File with name {blob.FileName} already exists in container. Set another name to store the file in the container: '{_blobContainerClient.Name}.'");
             response.Status = $"File with name {blob.FileName} already exists. Please use another name to store your file.";
             response.Error = true;
             return response;
@@ -204,13 +195,10 @@ public class AzureStorage : IAzureStorage
     }
     public async Task<BlobDto> DownloadAsync(string blobFilename)
     {
-        // Get a reference to a container named in appsettings.json
-        BlobContainerClient client = new BlobContainerClient(_storageConnectionString, _storageContainerName);
-
         try
         {
             // Get a reference to the blob uploaded earlier from the API in the container from configuration settings
-            BlobClient file = client.GetBlobClient(blobFilename);
+            BlobClient file = _blobContainerClient.GetBlobClient(blobFilename);
 
             // Check if the file exists in the container
             if (await file.ExistsAsync())
@@ -241,9 +229,7 @@ public class AzureStorage : IAzureStorage
     }
     public async Task<BlobResponseDto> DeleteAsync(string blobFilename)
     {
-        BlobContainerClient client = new BlobContainerClient(_storageConnectionString, _storageContainerName);
-
-        BlobClient file = client.GetBlobClient(blobFilename);
+        BlobClient file = _blobContainerClient.GetBlobClient(blobFilename);
 
         try
         {
@@ -267,14 +253,12 @@ public class AzureStorage : IAzureStorage
     {
         // Create new upload response object that we can return to the requesting method
         BlobResponseDto response = new();
-
-        // Get a reference to a container named in appsettings.json and then create it
-        BlobContainerClient container = new BlobContainerClient(_storageConnectionString, _storageContainerName);
-        await container.CreateIfNotExistsAsync();
+      
+        await _blobContainerClient.CreateIfNotExistsAsync();
         try
         {
             // Get a reference to the blob just uploaded from the API in a container from configuration settings
-            BlobClient client = container.GetBlobClient(fileName);
+            BlobClient client = _blobContainerClient.GetBlobClient(fileName);
             // Specify the StorageTransferOptions
             BlobUploadOptions options = new BlobUploadOptions
             {
@@ -302,7 +286,7 @@ public class AzureStorage : IAzureStorage
         catch (RequestFailedException ex)
            when (ex.ErrorCode == BlobErrorCode.BlobAlreadyExists)
         {
-            _logger.LogError($"File with name {fileName} already exists in container. Set another name to store the file in the container: '{_storageContainerName}.'");
+            _logger.LogError($"File with name {fileName} already exists in container. Set another name to store the file in the container: '{_blobContainerClient.Name}.'");
             response.Status = $"File with name {fileName} already exists. Please use another name to store your file.";
             response.Error = true;
             return response;
@@ -322,28 +306,33 @@ public class AzureStorage : IAzureStorage
 
     }
 
+
+    #region Generate SasUri
     // TODO: make private method
     public async Task<Uri> GetServiceSasUriForContainer(string storedPolicyName = null)
-    {
-        // TODO: make singleton
-        BlobContainerClient containerClient = new BlobContainerClient(_storageConnectionString, _storageContainerName);
-        await containerClient.CreateIfNotExistsAsync();
+    {        
+        // Check and create container if not exist in azure storage.
+        await _blobContainerClient.CreateIfNotExistsAsync();
+
         // Check whether this BlobContainerClient object has been authorized with Shared Key.
-        if (containerClient.CanGenerateSasUri)
+        if (_blobContainerClient.CanGenerateSasUri)
         {
             // Create a SAS token that's valid for one hour.
-            BlobSasBuilder sasBuilder = new BlobSasBuilder()
+            BlobSasBuilder sasBuilder = new()
             {
-                BlobContainerName = containerClient.Name,
-                // TODO: add comment
+                // Specify the container name.                
+                BlobContainerName = _blobContainerClient.Name,               
+                // The Resource ="c" means Create a service SAS for a blob container.
                 Resource = "c"
             };
 
+            // If no stored access policy is specified, create the policy
+            // by specifying StartsOn, ExpiresOn and permissions.
             if (storedPolicyName == null)
             {
                 sasBuilder.StartsOn = DateTimeOffset.UtcNow;
-                //sasBuilder.ExpiresOn = DateTimeOffset.UtcNow.AddMinutes(2);
-                sasBuilder.ExpiresOn = DateTimeOffset.UtcNow.AddHours(1);
+                sasBuilder.ExpiresOn = DateTimeOffset.UtcNow.AddMinutes(5);
+                //sasBuilder.ExpiresOn = DateTimeOffset.UtcNow.AddHours(1);
                 sasBuilder.SetPermissions(BlobContainerSasPermissions.Read | BlobContainerSasPermissions.Write);
                 sasBuilder.SetPermissions(BlobSasPermissions.Tag | BlobSasPermissions.Read | BlobSasPermissions.Write);
             }
@@ -351,7 +340,10 @@ public class AzureStorage : IAzureStorage
             {
                 sasBuilder.Identifier = storedPolicyName;
             }
-            Uri sasUri = containerClient.GenerateSasUri(sasBuilder);
+            // Get the SAS URI for the specified container.
+            Uri sasUri = _blobContainerClient.GenerateSasUri(sasBuilder);
+
+            // Return the SAS URI for blob container.
             return sasUri;
         }
         else
@@ -359,37 +351,7 @@ public class AzureStorage : IAzureStorage
             return null;
         }
     }
-    
-    private static Uri GetServiceSasUriForContainer(BlobContainerClient containerClient, string storedPolicyName = null)
-    {
-        // Check whether this BlobContainerClient object has been authorized with Shared Key.
-        if (containerClient.CanGenerateSasUri)
-        {
-            // Create a SAS token that's valid for one hour.
-            BlobSasBuilder sasBuilder = new BlobSasBuilder()
-            {
-                BlobContainerName = containerClient.Name,
-                Resource = "c"
-            };
-
-            if (storedPolicyName == null)
-            {
-                sasBuilder.ExpiresOn = DateTimeOffset.UtcNow.AddHours(1);
-                sasBuilder.SetPermissions(BlobContainerSasPermissions.Read);
-            }
-            else
-            {
-                sasBuilder.Identifier = storedPolicyName;
-            }
-            Uri sasUri = containerClient.GenerateSasUri(sasBuilder);
-            return sasUri;
-        }
-        else
-        {
-            return null;
-        }
-    }
-
+   
     private static Uri GetServiceSasUriForBlob(BlobClient blobClient, string storedPolicyName = null)
     {
         // Check whether this BlobClient object has been authorized with Shared Key.
@@ -422,5 +384,5 @@ public class AzureStorage : IAzureStorage
         }
     }
 
-
+    #endregion
 }
