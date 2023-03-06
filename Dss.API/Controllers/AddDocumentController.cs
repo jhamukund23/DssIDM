@@ -44,37 +44,20 @@ namespace Dss.API.Controllers
             try
             {
                 Uri sasUrl = await _storage.GetServiceSasUriForContainer();
-                AddDocumentResponse addDocumentResponse = new()
-                {
-                    SasUrl = sasUrl,
-                    CorrelationId = addDocumentRequest.CorrelationId
-                };
-                var topicPart = new TopicPartition(KafkaTopics.AddDocumentResponse, new Partition(1));
-                await _kafkaProducer.ProduceAsync(topicPart, null, addDocumentResponse);
+                SendResponseToTopic(addDocumentRequest.CorrelationId, sasUrl);
+                InsertAddDocumentIntoDB(addDocumentRequest, sasUrl);
 
-                AddDocument addDocument = new()
-                {
-                    correlationid = addDocumentRequest.CorrelationId,
-                    filename= addDocumentRequest.FileName,
-                    tempbloburl = sasUrl,
-                };
-                await _addDocumentService.AddDocumentAsync(addDocument);
-
-                _logger.LogInformation("sas url details " + addDocumentResponse);
+                //_logger.LogInformation("sas url details " + addDocumentResponse);
                 return Ok(new { StatusCode = StatusCodes.Status201Created });
             }
             catch (Exception ex)
             {
-                AddDocumentErrorResponse addDocumentErrorResponse = new()
-                {
-                    CorrelationId = addDocumentRequest.CorrelationId,
-                    Error = ex.Message
-                };
-                var topicPart = new TopicPartition(KafkaTopics.AddDocumentErrorResponse, new Partition(1));
-                await _kafkaErrorProducer.ProduceAsync(topicPart, null, addDocumentErrorResponse);
+                SendErrorResponseToTopic(addDocumentRequest.CorrelationId, ex.Message);
                 return StatusCode(StatusCodes.Status400BadRequest);
             }
         }
+
+
 
         [HttpPost]
         [Route("BlobCompletedEvent")]
@@ -85,7 +68,7 @@ namespace Dss.API.Controllers
             {
                 if (blobStorageEventHubData.eventType == "Microsoft.Storage.BlobCreated")
                 {
-                    
+
 
                 }
 
@@ -94,10 +77,42 @@ namespace Dss.API.Controllers
             }
             catch (Exception ex)
             {
-                
+
                 return StatusCode(StatusCodes.Status400BadRequest);
             }
         }
 
+        #region
+        private void InsertAddDocumentIntoDB(AddDocumentRequest addDocumentRequest, Uri sasUrl)
+        {
+            AddDocument addDocument = new()
+            {
+                correlationid = addDocumentRequest.CorrelationId,
+                filename = addDocumentRequest.FileName,
+                tempbloburl = sasUrl,
+            };
+            _addDocumentService.AddDocumentAsync(addDocument);
+        }
+        private void SendResponseToTopic(Guid correlationId, Uri sasUrl)
+        {
+            AddDocumentResponse addDocumentResponse = new()
+            {
+                SasUrl = sasUrl,
+                CorrelationId = correlationId
+            };
+            var topicPart = new TopicPartition(KafkaTopics.AddDocumentResponse, new Partition(1));
+            _kafkaProducer.ProduceAsync(topicPart, null, addDocumentResponse);
+        }
+        private void SendErrorResponseToTopic(Guid correlationId, string ex)
+        {
+            AddDocumentErrorResponse addDocumentErrorResponse = new()
+            {
+                CorrelationId = correlationId,
+                Error = ex
+            };
+            var topicPart = new TopicPartition(KafkaTopics.AddDocumentErrorResponse, new Partition(1));
+            _kafkaErrorProducer.ProduceAsync(topicPart, null, addDocumentErrorResponse);
+        }
+        #endregion
     }
 }

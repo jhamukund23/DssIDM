@@ -322,8 +322,10 @@ public class AzureStorage : IAzureStorage
 
     }
 
+    // TODO: make private method
     public async Task<Uri> GetServiceSasUriForContainer(string storedPolicyName = null)
     {
+        // TODO: make singleton
         BlobContainerClient containerClient = new BlobContainerClient(_storageConnectionString, _storageContainerName);
         await containerClient.CreateIfNotExistsAsync();
         // Check whether this BlobContainerClient object has been authorized with Shared Key.
@@ -333,6 +335,7 @@ public class AzureStorage : IAzureStorage
             BlobSasBuilder sasBuilder = new BlobSasBuilder()
             {
                 BlobContainerName = containerClient.Name,
+                // TODO: add comment
                 Resource = "c"
             };
 
