@@ -5,9 +5,9 @@ using Newtonsoft.Json;
 
 namespace Kafka
 {
-    internal sealed class KafkaDeserializer<T> : IDeserializer<T>
+    internal sealed class KafkaDeserializer<T> : IDeserializer<T?>
     {
-        public T Deserialize(ReadOnlySpan<byte> data, bool isNull, SerializationContext context)
+        public T? Deserialize(ReadOnlySpan<byte> data, bool isNull, SerializationContext context)
         {
             if (typeof(T) == typeof(Null))
             {

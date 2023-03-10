@@ -15,17 +15,17 @@ namespace Dss.Application.Services;
 public class AzureStorage : IAzureStorage
 {
     #region Dependency Injection / Constructor
-    private readonly BlobContainerClient _blobContainerClient;    
+    private readonly BlobContainerClient _blobContainerClient;
     private readonly ILogger<AzureStorage> _logger;
     public AzureStorage(BlobContainerClient blobContainerClient, ILogger<AzureStorage> logger)
     {
-        _blobContainerClient = blobContainerClient;      
+        _blobContainerClient = blobContainerClient;
         _logger = logger;
     }
 
     #endregion
     public async Task<List<BlobDto>> ListAsync()
-    {               
+    {
         // Create a new list object for 
         List<BlobDto> files = new List<BlobDto>();
 
@@ -51,7 +51,7 @@ public class AzureStorage : IAzureStorage
     public async Task<BlobResponseDto> UploadAsync(IFormFile blob)
     {
         // Create new upload response object that we can return to the requesting method
-        BlobResponseDto response = new();       
+        BlobResponseDto response = new();
         await _blobContainerClient.CreateIfNotExistsAsync();
         try
         {
@@ -193,7 +193,7 @@ public class AzureStorage : IAzureStorage
         // Return the BlobUploadResponse object
         return response;
     }
-    public async Task<BlobDto> DownloadAsync(string blobFilename)
+    public async Task<BlobDto?> DownloadAsync(string blobFilename)
     {
         try
         {
@@ -253,7 +253,7 @@ public class AzureStorage : IAzureStorage
     {
         // Create new upload response object that we can return to the requesting method
         BlobResponseDto response = new();
-      
+
         await _blobContainerClient.CreateIfNotExistsAsync();
         try
         {
@@ -309,8 +309,53 @@ public class AzureStorage : IAzureStorage
 
     #region Generate SasUri
     // TODO: make private method
-    public async Task<Uri> GetServiceSasUriForContainer(string storedPolicyName = null)
-    {        
+    public Uri? GetServiceSasUriForContainer(string? storedPolicyName = null)
+    {
+        Uri? sasUri = null;
+        // Check and create container if not exist in azure storage.
+        _blobContainerClient.CreateIfNotExistsAsync();
+
+        // Check whether this BlobContainerClient object has been authorized with Shared Key.
+        if (_blobContainerClient.CanGenerateSasUri)
+        {
+            // Create a SAS token that's valid for one hour.
+            BlobSasBuilder sasBuilder = new()
+            {
+                // Specify the container name.                
+                BlobContainerName = _blobContainerClient.Name,
+                // The Resource ="c" means Create a service SAS for a blob container.
+                Resource = "c"
+            };
+
+            // If no stored access policy is specified, create the policy
+            // by specifying StartsOn, ExpiresOn and permissions.
+            if (storedPolicyName == null)
+            {
+                sasBuilder.StartsOn = DateTimeOffset.UtcNow;
+                sasBuilder.ExpiresOn = DateTimeOffset.UtcNow.AddMinutes(5);
+                //sasBuilder.ExpiresOn = DateTimeOffset.UtcNow.AddHours(1);
+                sasBuilder.SetPermissions(BlobContainerSasPermissions.Read | BlobContainerSasPermissions.Write);
+                sasBuilder.SetPermissions(BlobSasPermissions.Tag | BlobSasPermissions.Read | BlobSasPermissions.Write);
+            }
+            else
+            {
+                sasBuilder.Identifier = storedPolicyName;
+            }
+            // Get the SAS URI for the specified container.
+             sasUri = _blobContainerClient.GenerateSasUri(sasBuilder);
+
+            // Return the SAS URI for blob container.
+            return sasUri;
+        }
+        else
+        {
+            return sasUri;
+        }
+    }
+
+
+    public async Task<Uri?> GetServiceSasUriForContainerAsync(string? storedPolicyName = null)
+    {
         // Check and create container if not exist in azure storage.
         await _blobContainerClient.CreateIfNotExistsAsync();
 
@@ -321,7 +366,7 @@ public class AzureStorage : IAzureStorage
             BlobSasBuilder sasBuilder = new()
             {
                 // Specify the container name.                
-                BlobContainerName = _blobContainerClient.Name,               
+                BlobContainerName = _blobContainerClient.Name,
                 // The Resource ="c" means Create a service SAS for a blob container.
                 Resource = "c"
             };
@@ -351,8 +396,7 @@ public class AzureStorage : IAzureStorage
             return null;
         }
     }
-   
-    private static Uri GetServiceSasUriForBlob(BlobClient blobClient, string storedPolicyName = null)
+    private static Uri? GetServiceSasUriForBlob(BlobClient blobClient, string? storedPolicyName = null)
     {
         // Check whether this BlobClient object has been authorized with Shared Key.
         if (blobClient.CanGenerateSasUri)

@@ -58,7 +58,7 @@ public class StorageController : ControllerBase
     public async Task<IActionResult> GetServiceSasUriForContainer()
     {
         // Get all files at the Azure Storage Location and return them
-        Uri sasUrl = await _storage.GetServiceSasUriForContainer();
+        Uri? sasUrl = await _storage.GetServiceSasUriForContainerAsync();
 
         // Returns an empty array if no files are present at the storage container
         return StatusCode(StatusCodes.Status200OK, sasUrl);

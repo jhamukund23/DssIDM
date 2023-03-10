@@ -7,7 +7,7 @@ namespace Kafka
 {
     internal sealed class KafkaSerializer<T> : ISerializer<T>
     {
-        public byte[] Serialize(T data, SerializationContext context)
+        public byte[]? Serialize(T data, SerializationContext context)
         {
             if (typeof(T) == typeof(Null))
                 return null;

@@ -35,7 +35,7 @@ namespace Kafka.Producer
         {
             await _producer.ProduceAsync(topic, new Message<TKey, TValue> { Key = key, Value = value })
                                     .ContinueWith(task => task.IsFaulted
-                                    ? $"error producing message: {task.Exception.Message}"
+                                    ? $"error producing message: {task.Exception?.Message}"
                                     : $"produced to: {task.Result.TopicPartitionOffset}");
 
         }
@@ -51,7 +51,7 @@ namespace Kafka.Producer
         {
             await _producer.ProduceAsync(topicPartition, new Message<TKey, TValue> { Key = key, Value = value })
                                     .ContinueWith(task => task.IsFaulted
-                                    ? $"error producing message: {task.Exception.Message}"
+                                    ? $"error producing message: {task.Exception?.Message}"
                                     : $"produced to: {task.Result.TopicPartitionOffset}");
         }
 

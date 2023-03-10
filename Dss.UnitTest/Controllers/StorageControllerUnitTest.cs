@@ -11,18 +11,10 @@ namespace dss.unittest;
 [TestFixture]
 public class StorageControllerUnitTest
 {
-    private StorageController _storageController;
-    private Mock<IAzureStorage> _azureStorage;
-    private Mock<ILogger<StorageController>> _logger;
-    private Fixture _fixture;
-    private readonly string _storageConnectionString;
-    private readonly string _storageContainerName;
-
-    public StorageControllerUnitTest(IConfiguration configuration)
-    {
-        _storageConnectionString = configuration.GetValue<string>("BlobConnectionString");
-        _storageContainerName = configuration.GetValue<string>("BlobContainerName");
-    }
+    private StorageController? _storageController;
+    private Mock<IAzureStorage>? _azureStorage;
+    private Mock<ILogger<StorageController>>? _logger;
+    private Fixture? _fixture;    
     [SetUp]
     public void Setup()
     {

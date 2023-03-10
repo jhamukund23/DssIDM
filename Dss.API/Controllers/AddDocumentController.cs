@@ -37,20 +37,20 @@ namespace Dss.API.Controllers
         }
 
         #region Public Action Method
-        // Generate and return the SAS URI.
+        // Generate,produce the SAS Uri and store request into database.
         [HttpPost]
         [Route("GetAddDocumentBlobUrl")]
-        public async Task<IActionResult> GetAddDocumentBlobUrl(AddDocumentRequest addDocumentRequest)
+        public IActionResult GetAddDocumentBlobUrl(AddDocumentRequest addDocumentRequest)
         {
             try
             {
                 // Get the SAS URI.
-                Uri sasUrl = await _storage.GetServiceSasUriForContainer();
+                Uri? sasUrl =  _storage.GetServiceSasUriForContainer();
 
-                // Send correlation id and sasUrl to Kafka topic.
+                // Send correlation id and sasUrl to Kafka response topic.
                 ProduceAddDocumentResponse(addDocumentRequest.CorrelationId, sasUrl);
                 
-                // Insert add document details into database.
+                // Insert add document request details into database.
                 InsertAddDocumentRecordIntoDB(addDocumentRequest, sasUrl);
 
                 //Return status code
@@ -58,7 +58,7 @@ namespace Dss.API.Controllers
             }
             catch (Exception ex)
             {
-                // Send correlation id and error message to Kafka topic.
+                // Send correlation id and error message to Kafka error response topic.
                 ProduceAddDocumentErrorResponse(addDocumentRequest.CorrelationId, ex.Message);
                 _logger.LogError($"Exception occurred with a message: {ex.Message}");
                 return StatusCode(StatusCodes.Status400BadRequest, ex.Message);
@@ -69,7 +69,7 @@ namespace Dss.API.Controllers
         [HttpPost]
         [Route("BlobCompletedEvent")]
         [ProducesResponseType(StatusCodes.Status200OK)]
-        public async Task<IActionResult> BlobCompletedEvent(BlobStorageEventHubData blobStorageEventHubData)
+        public IActionResult BlobCompletedEvent(BlobStorageEventHubData blobStorageEventHubData)
         {
             try
             {
@@ -84,15 +84,14 @@ namespace Dss.API.Controllers
             }
             catch (Exception ex)
             {
-
-                return StatusCode(StatusCodes.Status400BadRequest);
+                return StatusCode(StatusCodes.Status400BadRequest, ex.Message);
             }
         }
 
         #endregion
 
         #region Private Method
-        private void InsertAddDocumentRecordIntoDB(AddDocumentRequest addDocumentRequest, Uri sasUrl)
+        private void InsertAddDocumentRecordIntoDB(AddDocumentRequest addDocumentRequest, Uri? sasUrl)
         {
             AddDocument addDocument = new()
             {
@@ -102,7 +101,7 @@ namespace Dss.API.Controllers
             };
             _addDocumentService.AddDocumentAsync(addDocument);
         }
-        private void ProduceAddDocumentResponse(Guid correlationId, Uri sasUrl)
+        private void ProduceAddDocumentResponse(Guid correlationId, Uri? sasUrl)
         {
             AddDocumentResponse addDocumentResponse = new()
             {
@@ -110,7 +109,7 @@ namespace Dss.API.Controllers
                 CorrelationId = correlationId
             };
             var topicPart = new TopicPartition(KafkaTopics.AddDocumentResponse, new Partition(1));
-            _kafkaProducer.ProduceAsync(topicPart, null, addDocumentResponse);
+            _kafkaProducer.ProduceAsync(topicPart, "AddDocumentRequest", addDocumentResponse);
         }
         private void ProduceAddDocumentErrorResponse(Guid correlationId, string ex)
         {
@@ -120,7 +119,7 @@ namespace Dss.API.Controllers
                 Error = ex
             };
             var topicPart = new TopicPartition(KafkaTopics.AddDocumentErrorResponse, new Partition(1));
-            _kafkaErrorProducer.ProduceAsync(topicPart, null, addDocumentErrorResponse);
+            _kafkaErrorProducer.ProduceAsync(topicPart, "AddDocumentErrorResponse", addDocumentErrorResponse);
         }
         #endregion
     }

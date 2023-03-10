@@ -12,7 +12,7 @@ namespace Dss.Domain.Models
         [Key]
         public Guid correlationid { get; set; }
         public Guid? docid { get; set; }
-        public Uri tempbloburl { get; set; }
+        public Uri? tempbloburl { get; set; }
         public string? permanenturl { get; set; }
         public string? filename { get; set; }
     }

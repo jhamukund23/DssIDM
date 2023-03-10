@@ -7,24 +7,15 @@ namespace AzureBlobStorage.Test
 {
     public class AzureStorage
     {
-        private readonly string _storageConnectionString;
-        private readonly string _storageContainerName;
-
-        public AzureStorage(IConfiguration configuration)
-        {
-            _storageConnectionString = configuration.GetValue<string>("BlobConnectionString");
-            _storageContainerName = configuration.GetValue<string>("BlobContainerName");
-        }
-
         [SetUp]
         public void Setup()
         {
         }
 
-        [Test]
-        public async Task UploadAsync()
-        {
-            Assert.Pass();
+        //[Test]
+        //public async Task UploadAsync()
+       // {
+        //    Assert.Pass();
             //string path = CreateTempFile(SampleFileContent);
 
             //BlobContainerClient container = new BlobContainerClient(_storageConnectionString, _storageContainerName);
@@ -46,6 +37,6 @@ namespace AzureBlobStorage.Test
             //    // Clean up after the test when we're finished
             //    await container.DeleteAsync();
             //}
-        }
+        //}
     }
 }
